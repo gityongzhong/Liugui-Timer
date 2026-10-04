@@ -21,7 +21,7 @@
 
 ## 下载
 
-到 [Releases](../../releases/latest) 下载 `liugui-timer-vX.Y.Z-portable.exe`，双击即可运行，**无需安装**。
+到 [Releases](../../releases/latest) 下载 `liugui-timer-vX.Y.Z.exe`，双击即可运行，**无需安装**。
 
 > GitHub 在国内下载可能较慢，若打不开可多试几次，或使用加速镜像。
 
