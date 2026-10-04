@@ -1,0 +1,15 @@
+# 依赖与构建产物
+node_modules/
+dist/
+*.exe
+
+# 测试与运行时数据
+.test-userdata/
+shots/
+*.log
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
