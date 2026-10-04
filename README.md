@@ -82,6 +82,8 @@ npm run dist       # 打包便携版 exe
 
 技术栈：**Electron + 原生 JavaScript / HTML / CSS**，无框架、无构建工具、不联网。
 
+采用 [MIT 许可](LICENSE)：可自由使用、修改、分发（含商业用途），请保留版权声明。
+
 实现要点（详见源码注释）：
 
 - **PPT / WPS 放映检测**：`koffi` 调 `user32.dll` 枚举顶层窗口。PowerPoint 放映窗口类名是
