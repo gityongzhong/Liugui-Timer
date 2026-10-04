@@ -315,6 +315,52 @@
     background:#5a1f1f;color:#ffd9d9;font-size:12px;line-height:1.5;
     white-space:pre-wrap;word-break:break-all;border-radius:16px 16px 0 0;
   }
+
+  /* ---------- 底部版权栏 ---------- */
+  .copyright{
+    flex:0 0 auto;display:flex;align-items:center;gap:12px;
+    padding:6px 18px 10px;
+    font-size:11px;color:var(--txt3);letter-spacing:.2px;
+  }
+  .copyright .cp-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .copyright .sp{flex:1}
+  .support-btn{
+    flex:0 0 auto;padding:3px 10px;border:none;border-radius:7px;
+    background:var(--panel);color:var(--txt2);font-family:inherit;font-size:11px;
+    line-height:1.5;cursor:pointer;transition:background .15s,color .15s;
+  }
+  .support-btn:hover{background:var(--panel-hover);color:var(--txt)}
+
+  /* ---------- 赞赏弹层（复用 .mask 遮罩；卡片近实色深灰，衬白底赞赏码） ---------- */
+  .donate{
+    width:300px;max-width:86vw;padding:20px 18px 16px;border-radius:12px;
+    background:rgba(44,44,46,.97);
+    box-shadow:0 0 0 .5px rgba(255,255,255,.14);
+    display:flex;flex-direction:column;align-items:center;text-align:center;
+  }
+  .donate h3{margin:0 0 4px;font-size:14.5px;font-weight:600;color:var(--txt)}
+  .donate .dsub{font-size:11.5px;color:var(--txt2);margin-bottom:12px}
+  .donate img{
+    width:236px;max-width:100%;height:auto;display:block;
+    border-radius:10px;background:#fff;padding:8px;box-sizing:border-box;
+  }
+  .donate .dtip{font-size:11px;color:var(--txt3);margin-top:10px}
+  .donate .dclose{
+    margin-top:12px;padding:6px 24px;border:none;border-radius:8px;
+    background:var(--accent);color:#fff;font-family:inherit;font-size:12px;
+    cursor:pointer;transition:filter .15s;
+  }
+  .donate .dclose:hover{filter:brightness(1.1)}
+
+  /* 放大态：版权栏与弹层同比放大 */
+  body.zoomed .copyright{font-size:14px;padding:10px 28px 14px;gap:16px}
+  body.zoomed .support-btn{font-size:14px;padding:5px 14px}
+  body.zoomed .donate{width:min(420px,50vh)}
+  body.zoomed .donate h3{font-size:19px}
+  body.zoomed .donate .dsub{font-size:14px}
+  body.zoomed .donate img{width:76%}
+  body.zoomed .donate .dtip{font-size:13px}
+  body.zoomed .donate .dclose{font-size:14px;padding:8px 30px}
 </style>
 </head>
 <body>
@@ -373,6 +419,12 @@
         </div>
       </main>
     </div>
+
+    <footer class="copyright">
+      <span class="cp-txt">© 2026-2026 hongyongzhong&nbsp;&nbsp;Email: hongyongzhong2020@126.com</span>
+      <span class="sp"></span>
+      <button class="support-btn" id="supportBtn" title="请作者喝杯咖啡">◔ 支持作者</button>
+    </footer>
   </div>
 </div>
 
@@ -485,6 +537,38 @@
     row.appendChild(yes);
     card.appendChild(p);
     card.appendChild(row);
+    mask.appendChild(card);
+    document.body.appendChild(mask);
+  }
+
+  /* 赞赏弹层：点「支持作者」显示微信赞赏码（点遮罩或「关闭」收起） */
+  function showDonate(){
+    var mask = document.createElement("div");
+    mask.className = "mask";
+    var card = document.createElement("div");
+    card.className = "donate";
+    var h = document.createElement("h3");
+    h.textContent = "支持作者";
+    var sub = document.createElement("div");
+    sub.className = "dsub";
+    sub.textContent = "如果流晷计时器帮到了你，可以请作者喝杯咖啡";
+    var img = document.createElement("img");
+    img.src = "donate.png";
+    img.alt = "微信赞赏码";
+    var tip = document.createElement("div");
+    tip.className = "dtip";
+    tip.textContent = "微信扫一扫 · 金额随意 · 感谢每一份心意";
+    var btn = document.createElement("button");
+    btn.className = "dclose";
+    btn.textContent = "关闭";
+    function close(){ if(mask.parentNode){ mask.parentNode.removeChild(mask); } }
+    on(btn, "click", close);
+    on(mask, "click", function(ev){ if(ev.target === mask){ close(); } });
+    card.appendChild(h);
+    card.appendChild(sub);
+    card.appendChild(img);
+    card.appendChild(tip);
+    card.appendChild(btn);
     mask.appendChild(card);
     document.body.appendChild(mask);
   }
@@ -958,6 +1042,8 @@
   on(secEl, "input", applyInputs);
   on(minEl, "change", applyInputs);
   on(secEl, "change", applyInputs);
+
+  on(document.getElementById("supportBtn"), "click", showDonate);
 
   on(document.getElementById("dc"), "click", function(){
     if(window.LG && window.LG.closeWindow){ window.LG.closeWindow(); }
