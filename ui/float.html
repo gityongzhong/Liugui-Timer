@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>流晷 · 悬浮</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:transparent;overflow:hidden}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI Variable Display','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    -webkit-user-select:none;user-select:none;
+  }
+  .fw{
+    width:100%;height:100%;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:10px 12px 12px;
+    border-radius:16px;
+    background:rgba(28,28,30,.92);
+    /* 不要外投影：挂件铺满窗口，外投影只会在圆角外、窗口内留下灰黑角
+       （实测角落 alpha 17~47），所以只保留内侧描边 */
+    box-shadow:0 0 0 .5px rgba(255,255,255,.12) inset;
+    color:rgba(255,255,255,.92);
+    -webkit-app-region:drag;
+    transition:background .25s,box-shadow .25s;
+  }
+  .fw.run{box-shadow:0 0 0 .5px rgba(10,132,255,.55) inset}
+  .fw.done{background:rgba(48,22,22,.94);box-shadow:0 0 0 .5px rgba(255,69,58,.75) inset}
+
+  .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .tag{
+    font-size:11px;color:rgba(235,235,245,.58);letter-spacing:.2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .fw.done .tag{color:rgba(255,159,153,.85)}
+  .btns{display:flex;gap:5px;-webkit-app-region:no-drag}
+  .btns button{
+    width:19px;height:19px;padding:0;border:none;border-radius:50%;
+    background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);
+    font-size:10px;line-height:1;cursor:pointer;
+    transition:background .15s;
+  }
+  .btns button:hover{background:rgba(255,255,255,.26)}
+
+  .num{
+    font-size:56px;font-weight:600;line-height:1.06;letter-spacing:.5px;
+    font-variant-numeric:tabular-nums;
+    font-family:'SF Mono','SF Pro Display','Segoe UI Variable Display','Segoe UI',Consolas,monospace;
+    color:#fff;margin:2px 0 8px;text-align:center;white-space:nowrap;
+  }
+  .fw.done .num{color:#FF453A;animation:blink 1s steps(2,end) infinite}
+  @keyframes blink{50%{opacity:.35}}
+
+  /* 进度条：与主窗口同款渐变 + 发光点 + 柔光扫过 + 三段预警 */
+  .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.14);position:relative}
+  .bar i{
+    display:block;height:100%;width:0;border-radius:inherit;position:relative;
+    background:linear-gradient(90deg,#0A84FF,#64D2FF);
+    transition:width .2s cubic-bezier(.4,0,.2,1),background .3s,opacity .3s;
+  }
+  .bar i::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;
+    background:linear-gradient(100deg,rgba(255,255,255,0) 34%,rgba(255,255,255,.5) 50%,rgba(255,255,255,0) 66%);
+    background-size:220% 100%;
+    animation:flow 2.6s linear infinite;
+  }
+  .bar i::before{
+    content:"";position:absolute;right:-4px;top:50%;z-index:2;
+    width:12px;height:12px;margin-top:-6px;border-radius:50%;
+    background:#8FE3FF;box-shadow:0 0 7px 1px rgba(100,210,255,.55);
+    opacity:0;transition:opacity .3s,background .3s,box-shadow .3s;
+  }
+  .bar i.on::before{opacity:1}
+  @keyframes flow{from{background-position:220% 0}to{background-position:-120% 0}}
+
+  .bar.warn i{background:linear-gradient(90deg,#FF9F0A,#FFD60A)}
+  .bar.warn i::before{background:#FFE08A;box-shadow:0 0 7px 1px rgba(255,214,10,.55)}
+  .bar.crit i{background:linear-gradient(90deg,#FF453A,#FF6961)}
+  .bar.crit i::before{background:#FFB3AF;box-shadow:0 0 7px 1px rgba(255,105,97,.6)}
+  .fw.done .bar i{background:linear-gradient(90deg,#FF453A,#FF6961)}
+  .fw.done .bar i::after{animation:none}
+  .fw.paused .bar i{opacity:.45}
+  .fw.paused .bar i::before{opacity:0}
+  .fw.paused .bar i::after{animation-play-state:paused}
+</style>
+</head>
+<body>
+<div class="fw" id="fw">
+  <div class="top">
+    <span class="tag" id="tag">流晷计时器</span>
+    <span class="btns">
+      <button id="toMain" title="回到主窗口">⤢</button>
+      <button id="x" title="关闭悬浮窗">✕</button>
+    </span>
+  </div>
+  <div class="num" id="num">--:--</div>
+  <div class="bar"><i id="bar"></i></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var fwEl   = document.getElementById("fw");
+  var tagEl  = document.getElementById("tag");
+  var numEl  = document.getElementById("num");
+  var barEl  = document.getElementById("bar");
+  var xEl    = document.getElementById("x");
+  var toEl   = document.getElementById("toMain");
+
+  function apply(st){
+    if(!st){ return; }
+    numEl.textContent = st.text || "--:--";
+
+    var pct = typeof st.pct === "number" ? st.pct : 0;
+    if(pct < 0){ pct = 0; }
+    if(pct > 100){ pct = 100; }
+    barEl.style.width = pct.toFixed(1) + "%";
+    barEl.classList.toggle("on", pct > 0.5);
+
+    var leftRatio = 1 - pct / 100;
+    var barWrap = barEl.parentNode;
+    barWrap.classList.toggle("warn", leftRatio > 0.1 && leftRatio <= 0.2);
+    barWrap.classList.toggle("crit", leftRatio <= 0.1);
+
+    fwEl.classList.toggle("done", !!st.finished);
+    fwEl.classList.toggle("run", !st.finished && !!st.running);
+    fwEl.classList.toggle("paused", !st.finished && !st.running && !!st.paused);
+
+    var name = st.name || "流晷计时器";
+    if(st.finished){ tagEl.textContent = name + " · 时间到"; }
+    else if(st.running){ tagEl.textContent = name; }
+    else if(st.paused){ tagEl.textContent = name + " · 已暂停"; }
+    else { tagEl.textContent = name; }
+    tagEl.title = tagEl.textContent;
+  }
+
+  if(xEl){
+    xEl.addEventListener("click", function(){
+      if(window.LG && window.LG.closeFloat){ window.LG.closeFloat(); }
+    });
+  }
+  if(toEl){
+    toEl.addEventListener("click", function(){
+      if(window.LG && window.LG.activateMain){ window.LG.activateMain(); }
+    });
+  }
+
+  if(window.LG && window.LG.onState){ window.LG.onState(apply); }
+  if(window.LG && window.LG.log){ try{ window.LG.log("悬浮窗页面已加载"); }catch(e){} }
+
+  apply({ name: "流晷计时器", text: "--:--", pct: 0, running: false, finished: false, paused: false });
+})();
+</script>
+</body>
+</html>
