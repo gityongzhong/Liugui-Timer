@@ -1,0 +1,60 @@
+{
+  "name": "liugui-countdown",
+  "productName": "流晷计时器",
+  "version": "0.6.7",
+  "description": "流晷计时器 - 会议倒计时",
+  "main": "main.js",
+  "author": "YONGZHONG",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.hyz.liuguicountdown",
+    "productName": "流晷计时器",
+    "copyright": "Copyright (c) 2026 YONGZHONG",
+    "directories": {
+      "output": "../发布/electron-out",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "ui/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/koffi/**",
+      "**/node_modules/@koromix/**"
+    ],
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "流晷计时器-v${version}-便携版.exe",
+      "unpackDirName": "liugui-countdown"
+    },
+    "compression": "maximum",
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    }
+  },
+  "dependencies": {
+    "koffi": "^3.3.2"
+  }
+}
