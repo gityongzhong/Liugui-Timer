@@ -27,7 +27,7 @@
   }
 
   /* overflow:hidden —— 窗口内永远不出现整页滚动条：要滚，只滚左边那块列表 */
-  .win{width:100%;height:100%;padding:8px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .win{width:100%;height:100%;padding:12px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 
   /* 放大态：整屏铺满 + 全套字号同比放大（倒计时是给全场看的） */
   body.zoomed .win{padding:0;align-items:stretch}
@@ -47,7 +47,7 @@
   body.zoomed .bar{height:14px;border-radius:7px;margin-bottom:22px}
   body.zoomed .bar i::before{right:-8px;width:22px;height:22px;margin-top:-11px}
 
-  body.zoomed .seg button{font-size:16px;padding:9px 0}
+  body.zoomed .seg button{font-size:16px;padding:9px 12px}
   body.zoomed .item{padding:12px 14px}
   body.zoomed .item .nm{font-size:18px}
   body.zoomed .item .du{font-size:16px}
@@ -70,9 +70,10 @@
     width:100%;max-width:740px;
     display:flex;flex-direction:column;overflow:hidden;
     border-radius:16px;background:var(--bg);
-    /* 只留 0.5px 描边，不加黑色投影：透明窗口里的投影会被窗口边界切断，
-       反而在四周留下一圈看得见的灰黑雾（见 tools/diag-edge.js 实测） */
-    box-shadow:0 0 0 .5px rgba(255,255,255,.12);
+    /* 0.5px 描边 + 一点点投影：投影很小且 .win 留白 12px 足够容纳，
+       不会被窗口边界切断留灰雾（见 tools/diag-edge.js 边缘采样） */
+    box-shadow:0 0 0 .5px rgba(255,255,255,.12),
+               0 6px 20px rgba(0,0,0,.30);
   }
 
   /* ---------- 窗口顶栏 ---------- */
@@ -106,10 +107,20 @@
   .side{width:232px;flex:0 0 auto;display:flex;flex-direction:column;gap:8px;
         padding-right:18px;border-right:1px solid var(--line)}
 
-  .seg{display:flex;gap:2px;padding:2px;border-radius:9px;background:var(--panel);
-       margin-bottom:2px;flex-wrap:wrap;align-items:center}
+  /* 分类栏：始终单行横向排列，装不下就横向滚动（绝不换行往下叠） */
+  .seg{
+    display:flex;gap:2px;padding:2px;border-radius:9px;background:var(--panel);
+    margin-bottom:2px;align-items:center;
+    flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;   /* 不够宽时出现横拉条 */
+    height:41px;box-sizing:border-box;                     /* 高度固定，出不出滚动条都不变 */
+  }
+  /* 横向滚动条：极细、悬停才明显，不抢视觉 */
+  .seg::-webkit-scrollbar{height:5px}
+  .seg::-webkit-scrollbar-track{background:transparent}
+  .seg::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:3px}
+  .seg::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28)}
   .seg button{
-    flex:0 1 auto;padding:5px 9px;border:none;border-radius:7px;background:transparent;
+    flex:0 0 auto;padding:5px 9px;border:none;border-radius:7px;background:transparent;
     color:var(--txt2);font-family:inherit;font-size:12px;cursor:pointer;
     transition:background .15s,color .15s;white-space:nowrap;
     display:flex;align-items:center;
@@ -125,7 +136,7 @@
   .seg button:hover .cx{opacity:.65}
   .seg button .cx:hover{opacity:1}
   .seg .cat-edit{
-    flex:1 1 100%;min-width:60px;padding:4px 8px;border-radius:7px;
+    flex:0 0 auto;width:104px;padding:4px 8px;border-radius:7px;
     border:1px solid var(--accent);background:rgba(0,0,0,.3);color:#fff;
     font-family:inherit;font-size:12px;outline:none;
   }
@@ -316,20 +327,23 @@
     white-space:pre-wrap;word-break:break-all;border-radius:16px 16px 0 0;
   }
 
-  /* ---------- 底部版权栏 ---------- */
+  /* ---------- 底部操作栏 ---------- */
   .copyright{
-    flex:0 0 auto;display:flex;align-items:center;gap:12px;
-    padding:6px 18px 10px;
+    flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;
+    margin:4px 18px 0;padding:7px 0 9px;
+    border-top:1px solid rgba(255,255,255,.07);
     font-size:11px;color:var(--txt3);letter-spacing:.2px;
   }
-  .copyright .cp-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .copyright .sp{flex:1}
-  .support-btn{
-    flex:0 0 auto;padding:3px 10px;border:none;border-radius:7px;
+  .git-btn,.support-btn{
+    flex:0 0 auto;display:flex;align-items:center;gap:5px;
+    padding:3px 10px;border:none;border-radius:7px;
     background:var(--panel);color:var(--txt2);font-family:inherit;font-size:11px;
     line-height:1.5;cursor:pointer;transition:background .15s,color .15s;
   }
-  .support-btn:hover{background:var(--panel-hover);color:var(--txt)}
+  .git-btn:hover,.support-btn:hover{background:var(--panel-hover);color:var(--txt)}
+  .git-btn svg{width:12px;height:12px;flex:0 0 auto;fill:currentColor}
+  .support-btn img{width:13px;height:13px;flex:0 0 auto}
+  .support-btn:hover img{filter:brightness(1.25)}
 
   /* ---------- 赞赏弹层（复用 .mask 遮罩；卡片近实色深灰，衬白底赞赏码） ---------- */
   .donate{
@@ -353,8 +367,9 @@
   .donate .dclose:hover{filter:brightness(1.1)}
 
   /* 放大态：版权栏与弹层同比放大 */
-  body.zoomed .copyright{font-size:14px;padding:10px 28px 14px;gap:16px}
-  body.zoomed .support-btn{font-size:14px;padding:5px 14px}
+  body.zoomed .copyright{font-size:14px;margin:6px 28px 0;padding:10px 0 12px;gap:12px}
+  body.zoomed .git-btn,body.zoomed .support-btn{font-size:14px;padding:5px 14px}
+  body.zoomed .git-btn svg,body.zoomed .support-btn img{width:15px;height:15px}
   body.zoomed .donate{width:min(420px,50vh)}
   body.zoomed .donate h3{font-size:19px}
   body.zoomed .donate .dsub{font-size:14px}
@@ -421,9 +436,11 @@
     </div>
 
     <footer class="copyright">
-      <span class="cp-txt">© 2026-2026 hongyongzhong&nbsp;&nbsp;Email: hongyongzhong2020@126.com</span>
-      <span class="sp"></span>
-      <button class="support-btn" id="supportBtn" title="请作者喝杯咖啡">◔ 支持作者</button>
+      <button class="git-btn" id="gitBtn" title="打开 GitHub 仓库，查看或下载最新版本">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span>GitHub</span>
+      </button>
+      <button class="support-btn" id="supportBtn" title="支持作者"><img src="coffee.png" alt="">支持作者</button>
     </footer>
   </div>
 </div>
@@ -434,7 +451,7 @@
 
   var DEFAULT_CATS = ["周例会", "月度会", "季度会"];   /* 「重置分类」恢复到这里 */
   var cats = DEFAULT_CATS.slice();                     /* 当前分类（可增删；「全部」是虚拟分类） */
-  var PAD  = 16;   /* .win 四周 8px 留白（仅够圆角抗锯齿，无投影） */
+  var PAD  = 24;   /* .win 四周 12px 留白（圆角抗锯齿 + 投影呼吸空间） */
 
   var appEl    = document.getElementById("app");
   var segEl    = document.getElementById("seg");
@@ -551,7 +568,7 @@
     h.textContent = "支持作者";
     var sub = document.createElement("div");
     sub.className = "dsub";
-    sub.textContent = "如果流晷计时器帮到了你，可以请作者喝杯咖啡";
+    sub.textContent = "如果流晷计时器帮到了你，请作者喝杯咖啡";
     var img = document.createElement("img");
     img.src = "donate.png";
     img.alt = "微信赞赏码";
@@ -649,7 +666,22 @@
       on(b, "click", function(){ switchCat(c); });
       segEl.appendChild(b);
     });
+
+    /* 分类多出横拉条时，让当前选中的分类保持可见 */
+    var cur = segEl.querySelector("button.on");
+    if(cur && cur.scrollIntoView){
+      try{ cur.scrollIntoView({ inline:"nearest", block:"nearest" }); }catch(e){}
+    }
   }
+
+  /* 分类栏上滚动滚轮 = 横向滚动（分类多、横拉条出现时更顺手） */
+  on(segEl, "wheel", function(ev){
+    if(segEl.scrollWidth <= segEl.clientWidth){ return; }
+    var d = ev.deltaY || ev.deltaX;
+    if(!d){ return; }
+    segEl.scrollLeft += d;
+    if(ev.preventDefault){ ev.preventDefault(); }
+  });
 
   /* 新建分类：分段控件里就地出现输入框，回车确认 / Esc 取消 */
   function addCat(){
@@ -1044,6 +1076,11 @@
   on(secEl, "change", applyInputs);
 
   on(document.getElementById("supportBtn"), "click", showDonate);
+  on(document.getElementById("gitBtn"), "click", function(){
+    if(window.LG && window.LG.openExternal){
+      window.LG.openExternal("https://github.com/gityongzhong/Liugui-Timer");
+    }
+  });
 
   on(document.getElementById("dc"), "click", function(){
     if(window.LG && window.LG.closeWindow){ window.LG.closeWindow(); }
