@@ -38,6 +38,9 @@ contextBridge.exposeInMainWorld('LG', {
   /* 从悬浮窗唤回主窗口 */
   activateMain: () => ipcRenderer.send('main:activate'),
 
+  /* 用系统默认浏览器打开外部链接（GitHub 仓库页） */
+  openExternal: (url) => ipcRenderer.send('shell:open-external', String(url)),
+
   /* 主窗口按内容自适应尺寸 */
   fitWindow: (size) => ipcRenderer.send('window:fit', size || {}),
   /* 主窗口最高能到多少（屏幕工作区高度）：列表据此判断要不要内部滚动 */
