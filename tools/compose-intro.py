@@ -67,11 +67,11 @@ draw.line([80, 192, 1520, 192], fill=LINE, width=1)
 # ---- 截图区 ----
 hero = load_shot("介绍图-主界面.png", 880)          # 880×592
 fs = load_shot("介绍图-全屏投屏.png", 540)           # 540×321
-don = load_shot("介绍图-支持作者.png", 470)          # 470×316
+run = load_shot("介绍图-计时中.png", 470)            # 470×316
 
 paste_with_shadow(canvas, hero, 90, 228)
 paste_with_shadow(canvas, fs, 1000, 228)
-paste_with_shadow(canvas, don, 1035, 586)
+paste_with_shadow(canvas, run, 1035, 586)
 
 # ---- 功能标签（贴在 hero 下方）----
 chips = ["全屏投屏计时", "桌面悬浮窗", "PPT 放映自动计时", "多计时器 · 分类管理", "免安装 · 不联网"]
