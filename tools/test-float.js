@@ -155,15 +155,19 @@ async function run() {
      '界面 ' + fit.w + 'x' + fit.h + ', 窗口 ' + fit.iw + 'x' + fit.ih +
      ', 边距 ' + padX.toFixed(1) + '/' + padY.toFixed(1));
 
-  /* 卡片四周必须完全透明（不能有外投影留下的灰黑雾） */
+  /* 卡片带 0.5px 描边 + 一点点投影（v0.7.0 用户要求加回）：
+     投影必须克制——模糊半径小、偏移小，透明窗口才不会被切断出灰雾 */
   const ring = await js(mainWin, `(function(){
     var g = getComputedStyle(document.getElementById('app'));
     return JSON.stringify({ shadow: g.boxShadow, body: getComputedStyle(document.body).background });
   })()`);
   const ringObj = JSON.parse(ring);
-  ok('卡片无黑色外投影', ringObj.shadow.indexOf('rgba(0, 0, 0') < 0, ringObj.shadow);
+  ok('卡片有 0.5px 描边 + 柔和投影', ringObj.shadow.indexOf('rgba(255, 255, 255, 0.12)') >= 0
+     && ringObj.shadow.indexOf('rgba(0, 0, 0, 0.3) 0px 6px 20px') >= 0, ringObj.shadow);
 
-  /* 像素级：卡片外一圈必须 alpha=0（此前外投影会在这里留下灰黑雾） */
+  /* 像素级：卡片外 3px 只允许淡淡投影（alpha<64）。
+     此前无投影时这里要求 alpha=0；v0.7.0 加回一点投影后，
+     只要仍然低透就说明投影没被窗口边界切断成灰黑雾（灰雾时实测 alpha≈107+） */
   const rShot = await mainWin.webContents.capturePage();
   const rBmp = rShot.toBitmap ? rShot.toBitmap() : rShot.getBitmap();
   const rSz = rShot.getSize();
@@ -172,7 +176,8 @@ async function run() {
     var r = document.getElementById('app').getBoundingClientRect();
     return { l: r.left, t: r.top, r: r.right, b: r.bottom };
   })()`);
-  const aAt = (x, y) => rBmp[(y * rSz.width + x) * 4 + 3];
+  const aAt = (x, y) => rBmp[(Math.max(0, Math.min(rSz.height - 1, y)) * rSz.width
+                             + Math.max(0, Math.min(rSz.width - 1, x))) * 4 + 3];
   const rcx = Math.round((rRect.l + rRect.r) / 2 * rDpr);
   const rcy = Math.round((rRect.t + rRect.b) / 2 * rDpr);
   const probes = [
@@ -181,8 +186,8 @@ async function run() {
     aAt(rcx, Math.round(rRect.t * rDpr) - 3),
     aAt(rcx, Math.round(rRect.b * rDpr) + 3)
   ];
-  ok('卡片四周像素完全透明（无灰黑雾）', probes.every((a) => a === 0),
-     '左/右/上/下外 3px alpha=' + probes.join(','));
+  ok('卡片四周仅淡淡投影（无灰黑雾硬边）', probes.every((a) => a < 64),
+     '左/右/上/下外 3px alpha=' + probes.join(',') + '（阈值 64）');
 
   const winCfg = await js(mainWin, `JSON.stringify({
     radius: getComputedStyle(document.getElementById('app')).borderTopLeftRadius,
