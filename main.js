@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -446,11 +446,22 @@ ipcMain.on('win:close', () => {
 ipcMain.on('win:zoom-toggle', () => toggleZoom());
 ipcMain.handle('win:zoom-get', () => zoomed);
 
-/* 主窗口能长到多高（屏幕工作区高度）：渲染进程据此决定列表是否需要内部滚动 */
+/* 主窗口能长到多高（当前所在屏幕的工作区高度）：渲染进程据此决定列表是否需要内部滚动 */
+function currentWorkArea() {
+  try {
+    if (mainWin && !mainWin.isDestroyed()) {
+      const b = mainWin.getBounds();
+      const d = screen.getDisplayMatching(b);
+      if (d && d.workArea) return d.workArea;
+    }
+  } catch (e) {}
+  try { return screen.getPrimaryDisplay().workArea; } catch (e) {}
+  return null;
+}
+
 ipcMain.on('win:maxh', (e) => {
-  let h = 1100;
-  try { h = Math.round(screen.getPrimaryDisplay().workArea.height); } catch (err) {}
-  e.returnValue = h;
+  const wa = currentWorkArea();
+  e.returnValue = wa ? Math.round(wa.height) : 1100;
 });
 
 /* 主窗口按内容尺寸自适应（无边框透明窗口，setBounds 比 setContentSize 可靠） */
@@ -460,10 +471,9 @@ ipcMain.on('window:fit', (e, size) => {
   const w = Number(size.w), h = Number(size.h);
   if (!isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) return;
 
-  /* 高度上限跟着屏幕工作区走：列表条目很多时窗口只会长到屏幕装得下为止，
-     顶到上限后列表内部才滚动，避免窗口比屏幕还高出屏幕外 */
-  let wa = null;
-  try { wa = screen.getPrimaryDisplay().workArea; } catch (err) {}
+  /* 高度上限跟着「窗口当前所在的那块屏」走：多屏时副屏可能比主屏高/宽，
+     用主屏数据会把窗口硬拽回主屏（用户反馈的 bug） */
+  const wa = currentWorkArea();
   const maxW = wa ? Math.round(wa.width) : 1600;
   const maxH = wa ? Math.round(wa.height) : 1100;
 
@@ -472,15 +482,24 @@ ipcMain.on('window:fit', (e, size) => {
 
   const b = mainWin.getBounds();
   if (b.width === cw && b.height === ch) return;   // 尺寸没变就不折腾窗口
+
   let nx = b.x, ny = b.y;
-  if (wa) {   // 变高/变宽后把窗口夹在工作区内，别顶出屏幕
-    nx = Math.min(Math.max(nx, wa.x), Math.max(wa.x, wa.x + wa.width - cw));
-    ny = Math.min(Math.max(ny, wa.y), Math.max(wa.y, wa.y + wa.height - ch));
+  if (wa) {
+    /* 窗口当前完整落在工作区内 → 只改尺寸、位置一律不动，避免每次重排都被挪走 */
+    const inside = b.x >= wa.x - 1 && b.y >= wa.y - 1 &&
+                   b.x + b.width <= wa.x + wa.width + 1 &&
+                   b.y + b.height <= wa.y + wa.height + 1;
+    if (!inside) {
+      // 只有真的越界了才夹回当前屏幕工作区
+      nx = Math.min(Math.max(b.x, wa.x), Math.max(wa.x, wa.x + wa.width - cw));
+      ny = Math.min(Math.max(b.y, wa.y), Math.max(wa.y, wa.y + wa.height - ch));
+    }
   }
   try { mainWin.setBounds({ x: nx, y: ny, width: cw, height: ch }); } catch (err) {}
 
   if (!didFitMain) {
     didFitMain = true;
+    /* 首次自适应才居中。窗口若已被（用户或系统）放到别处，就不要抢它的位置 */
     try { mainWin.center(); } catch (err) {}
     log('窗口已按内容自适应 ' + cw + 'x' + ch + '（界面 ' + Math.round(w) + 'x' + Math.round(h) + '）');
   }
@@ -494,3 +513,10 @@ ipcMain.on('main:activate', () => {  if (mainWin && !mainWin.isDestroyed()) {
 });
 
 ipcMain.on('app:log', (e, msg) => log('前端: ' + msg));
+
+/* 用系统默认浏览器打开链接：只放行 https://github.com/，避免被滥用成任意协议跳转 */
+ipcMain.on('shell:open-external', (e, url) => {
+  try {
+    if (/^https:\/\/github\.com\//i.test(url)) shell.openExternal(url);
+  } catch (err) {}
+});
