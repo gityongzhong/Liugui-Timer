@@ -1,7 +1,7 @@
 {
   "name": "liugui-countdown",
   "productName": "流晷计时器",
-  "version": "0.6.9",
+  "version": "0.7.3",
   "description": "流晷计时器 - 会议倒计时",
   "main": "main.js",
   "author": "YONGZHONG",
